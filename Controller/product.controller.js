@@ -24,16 +24,32 @@ async function insertPro() {
 //-------------------C - Create------------
 // Add multiple Product
 let insertProducts = async (req, res, next) => {
-  let data = req.body;
-  let products = await Product.bulkCreate(data);
-  res.status(203).send('Added Successfully');
-  res.end();
+  try {
+    let data = req.body;
+    if (data[0].name == ' ' || data == '') {
+      throw new Error();
+    }
+    let products = await Product.bulkCreate(data);
+    res.status(203).send('Added Successfully');
+    res.end();
+  } catch (err) {
+    res.status(400).send('Error : Enter valid value');
+    res.end();
+  }
 };
 let insertProduct = async (req, res, next) => {
-  let data = req.body;
-  await Product.create(data);
-  res.status(203).send('Product was added Successfully');
-  res.end();
+  try {
+    let data = req.body;
+    if (data.name.charAt(0) == (' ' || '') || data.price == NaN) {
+      throw new Error();
+    }
+    await Product.create(data);
+    res.status(203).send('Product was added Successfully');
+    res.end();
+  } catch (err) {
+    res.status(400).send('Error : Enter valid value');
+    res.end();
+  }
 };
 //-------------------R - Read--------------
 let getAllProducts = async (req, res, next) => {
@@ -43,45 +59,74 @@ let getAllProducts = async (req, res, next) => {
   res.end();
 };
 let getProductById = async (req, res, next) => {
-  let id = req.params.id;
-  let prod = await Product.findAll({
-    where: {
-      id: id,
-    },
-  });
-  res.status(202).send(JSON.stringify(prod, null, 2));
-  res.end();
+  try {
+    let id = req.params.id;
+    let lastId = await Product.findOne({
+      order: [['id', 'DESC']],
+    });
+    if (id > lastId.id && id > 0) {
+      throw new Error();
+    }
+    let prod = await Product.findAll({
+      where: {
+        id: id,
+      },
+    });
+    res.status(202).send(JSON.stringify(prod, null, 2));
+    res.end();
+  } catch (err) {
+    res.status(400).send('Error : This id is not Valid');
+    res.end();
+  }
 };
 
 //-------------------U - Update ---------------
 let updateProduct = async (req, res, next) => {
-  let body = req.body;
-  await Product.update(
-    {
-      name: body.name,
-      price: body.price,
-    },
-    {
-      where: {
-        id: body.id,
-      },
+  try {
+    let body = req.body;
+    if(body.name.charAt(0) == (""||" ") || body.price == NaN ){
+        throw new Error()
     }
-  );
-  res.status(203).send('Product is Updated');
-  res.end();
+    await Product.update(
+      {
+        name: body.name,
+        price: body.price,
+      },
+      {
+        where: {
+          id: body.id,
+        },
+      }
+    );
+    res.status(203).send('Product is Updated');
+    res.end();
+  } catch (error) {
+    res.status(400).send("Error : Enter valid Value")
+    res.end()
+  }
 };
 //------------------D - Delete ------------------
-let deleteProduct = async (req,res,next) =>{
-    let id = req.params.id
-    await Product.destroy({
-        where : {
-            id : id
-        }
+let deleteProduct = async (req, res, next) => {
+try {
+    let lastId = await Product.findOne({
+        order : [['id','DESC']]
     })
-    res.status(202).send('Item deleted Successfully')
+    let id = req.params.id;
+    if(id<0 || id>lastId.id ){
+        throw new Error()
+    }
+    await Product.destroy({
+        where: {
+            id: id,
+    },
+  });
+  res.status(202).send('Item deleted Successfully');
+  res.end();
+} catch (error) {
+    res.status(400).send("Error : Enter Valid Id")
     res.end()
 }
-
+};
 
 module.exports = {
   getAllProducts,
@@ -89,5 +134,5 @@ module.exports = {
   insertProducts,
   insertProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
 };
